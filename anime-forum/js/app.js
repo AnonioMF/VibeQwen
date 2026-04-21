@@ -1,7 +1,13 @@
 /**
  * Основное приложение аниме-форума
  * Обрабатывает навигацию, рендеринг данных и взаимодействие с пользователем
+ * Работает с бэкендом через API
  */
+
+// ========================================
+// КОНФИГУРАЦИЯ API
+// ========================================
+const API_BASE_URL = 'http://localhost:3000/api';
 
 // ========================================
 // ГЛОБАЛЬНОЕ СОСТОЯНИЕ
@@ -12,18 +18,19 @@ const AppState = {
     currentUser: null,
     theme: 'light',
     data: {
-        users: mockUsers,
-        categories: mockCategories,
-        topics: mockTopics,
-        posts: mockPosts,
-        quotes: animeQuotes
+        users: [],
+        categories: [],
+        topics: [],
+        posts: [],
+        quotes: []
     }
 };
 
 // ========================================
 // ИНИЦИАЛИЗАЦИЯ ПРИЛОЖЕНИЯ
 // ========================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
+    await loadAllData();
     initializeTheme();
     loadUserData();
     renderAll();
@@ -31,6 +38,44 @@ document.addEventListener('DOMContentLoaded', () => {
     updateStatistics();
     loadAnimeQuote();
 });
+
+// ========================================
+// ЗАГРУЗКА ДАННЫХ С БЭКЕНДА
+// ========================================
+async function loadAllData() {
+    try {
+        const [categories, topics, users, quotes] = await Promise.all([
+            fetchAPI('/categories'),
+            fetchAPI('/themes'),
+            fetchAPI('/users'),
+            fetchAPI('/quotes')
+        ]);
+        
+        AppState.data.categories = categories;
+        AppState.data.topics = topics;
+        AppState.data.users = users;
+        AppState.data.quotes = [quotes]; // Цитата приходит одна
+    } catch (error) {
+        console.error('Ошибка загрузки данных:', error);
+        showError('Не удалось загрузить данные. Убедитесь, что сервер запущен.');
+    }
+}
+
+async function fetchAPI(endpoint, options = {}) {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...options.headers
+        }
+    });
+    
+    if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    return await response.json();
+}
 
 // ========================================
 // УПРАВЛЕНИЕ ТЕМОЙ (СВЕТЛАЯ/ТЕМНАЯ)
@@ -485,112 +530,123 @@ function handleQuote(e) {
 // ========================================
 // СОЗДАНИЕ НОВОЙ ТЕМЫ
 // ========================================
-function handleNewTopic(e) {
+async function handleNewTopic(e) {
     e.preventDefault();
     
     const title = document.getElementById('topicTitleInput').value;
     const content = document.getElementById('topicContent').value;
     const categoryId = parseInt(document.getElementById('topicCategory').value);
     const tagsInput = document.getElementById('topicTagsInput').value;
+    const tags = tagsInput.split(',').map(t => t.trim()).filter(t => t);
     
-    const newTopic = {
-        id: AppState.data.topics.length + 1,
-        categoryId: categoryId,
-        title: title,
-        authorId: 1, // Для демо используем первого пользователя
-        createdAt: getCurrentDateTime(),
-        views: 0,
-        replies: 0,
-        likes: 0,
-        tags: tagsInput.split(',').map(t => t.trim()).filter(t => t),
-        isPinned: false,
-        isLocked: false
-    };
-    
-    // Добавляем тему
-    AppState.data.topics.unshift(newTopic);
-    
-    // Создаем первый пост
-    const newPost = {
-        id: AppState.data.posts.length + 1,
-        topicId: newTopic.id,
-        authorId: 1,
-        content: content,
-        createdAt: getCurrentDateTime(),
-        likes: 0,
-        isOriginal: true
-    };
-    
-    AppState.data.posts.push(newPost);
-    
-    // Сохраняем данные
-    saveData();
-    
-    // Закрываем модалку
-    closeModal('newTopicModal');
-    
-    // Очищаем форму
-    document.getElementById('newTopicForm').reset();
-    
-    // Открываем созданную тему
-    openTopic(newTopic.id);
-    
-    // Обновляем статистику
-    updateStatistics();
+    try {
+        // Создаем тему через API
+        const newTopic = await fetchAPI('/themes', {
+            method: 'POST',
+            body: JSON.stringify({
+                categoryId,
+                title,
+                authorId: AppState.currentUser?.id || 1,
+                tags
+            })
+        });
+        
+        // Создаем первый пост
+        const newPost = await fetchAPI('/posts', {
+            method: 'POST',
+            body: JSON.stringify({
+                themeId: newTopic.id,
+                authorId: AppState.currentUser?.id || 1,
+                content
+            })
+        });
+        
+        // Закрываем модалку
+        closeModal('newTopicModal');
+        
+        // Очищаем форму
+        document.getElementById('newTopicForm').reset();
+        
+        // Перезагружаем данные и открываем тему
+        await loadAllData();
+        openTopic(newTopic.id);
+        
+        // Обновляем статистику
+        updateStatistics();
+    } catch (error) {
+        console.error('Ошибка создания темы:', error);
+        showError('Не удалось создать тему. Попробуйте позже.');
+    }
 }
 
 // ========================================
 // БЫСТРЫЙ ОТВЕТ
 // ========================================
-function handleQuickReply(e) {
+async function handleQuickReply(e) {
     e.preventDefault();
     
     const content = document.getElementById('quickReplyText').value.trim();
     
     if (!content || !AppState.currentTopic) return;
     
-    const newPost = {
-        id: AppState.data.posts.length + 1,
-        topicId: AppState.currentTopic.id,
-        authorId: 1, // Для демо
-        content: content,
-        createdAt: getCurrentDateTime(),
-        likes: 0,
-        isOriginal: false
-    };
-    
-    AppState.data.posts.push(newPost);
-    AppState.currentTopic.replies++;
-    
-    saveData();
-    
-    document.getElementById('quickReplyText').value = '';
-    
-    renderTopic(AppState.currentTopic);
-    updateStatistics();
+    try {
+        await fetchAPI('/posts', {
+            method: 'POST',
+            body: JSON.stringify({
+                themeId: AppState.currentTopic.id,
+                authorId: AppState.currentUser?.id || 1,
+                content
+            })
+        });
+        
+        document.getElementById('quickReplyText').value = '';
+        
+        // Перезагружаем данные темы
+        await loadAllData();
+        renderTopic(AppState.currentTopic);
+        updateStatistics();
+    } catch (error) {
+        console.error('Ошибка отправки ответа:', error);
+        showError('Не удалось отправить ответ. Попробуйте позже.');
+    }
 }
 
 // ========================================
 // ВХОД ПОЛЬЗОВАТЕЛЯ
 // ========================================
-function handleLogin(e) {
+async function handleLogin(e) {
     e.preventDefault();
     
-    const username = document.getElementById('loginUsername').value;
-    // Для демо просто имитируем вход
+    const email = document.getElementById('loginEmail').value;
+    const password = document.getElementById('loginPassword').value;
     
-    const user = AppState.data.users.find(u => u.username.toLowerCase() === username.toLowerCase());
-    
-    if (user) {
+    try {
+        const user = await fetchAPI('/users/login', {
+            method: 'POST',
+            body: JSON.stringify({ email, password })
+        });
+        
         AppState.currentUser = user;
         localStorage.setItem('currentUser', JSON.stringify(user));
+        
+        closeModal('loginModal');
+        document.getElementById('loginForm').reset();
+        
         alert(`Добро пожаловать, ${user.username}!`);
-    } else {
-        alert('Пользователь не найден. Для демо используйте: NarutoFan2024');
+        updateUserInfo();
+    } catch (error) {
+        console.error('Ошибка входа:', error);
+        alert('Неверный логин или пароль. Для теста используйте: fan@example.com / password123');
     }
-    
-    closeModal('loginModal');
-    document.getElementById('loginForm').reset();
+}
+
+// Обновление информации о пользователе в интерфейсе
+function updateUserInfo() {
+    const loginBtn = document.getElementById('loginBtn');
+    if (loginBtn && AppState.currentUser) {
+        loginBtn.innerHTML = `<i class="fas fa-user"></i> ${AppState.currentUser.username}`;
+        loginBtn.onclick = () => renderProfile(AppState.currentUser);
+    }
 }
 
 // ========================================
@@ -644,34 +700,39 @@ function closeModal(modalId) {
 // ========================================
 // СТАТИСТИКА ФОРУМА
 // ========================================
-function updateStatistics() {
-    const totalTopics = AppState.data.topics.length;
-    const totalPosts = AppState.data.posts.length;
-    const onlineUsers = AppState.data.users.filter(u => u.status === 'online').length;
-    
-    document.getElementById('onlineUsers').textContent = onlineUsers;
-    document.getElementById('totalTopics').textContent = totalTopics;
-    document.getElementById('totalPosts').textContent = totalPosts;
-    
-    // Футер статистика
-    document.getElementById('footerTotalUsers').textContent = AppState.data.users.length;
-    document.getElementById('footerTotalTopics').textContent = totalTopics;
-    document.getElementById('footerTotalPosts').textContent = totalPosts;
+async function updateStatistics() {
+    try {
+        const stats = await fetchAPI('/stats');
+        
+        document.getElementById('onlineUsers').textContent = stats.onlineUsers;
+        document.getElementById('totalTopics').textContent = stats.totalThemes;
+        document.getElementById('totalPosts').textContent = stats.totalPosts;
+        
+        // Футер статистика
+        document.getElementById('footerTotalUsers').textContent = stats.totalUsers;
+        document.getElementById('footerTotalTopics').textContent = stats.totalThemes;
+        document.getElementById('footerTotalPosts').textContent = stats.totalPosts;
+    } catch (error) {
+        console.error('Ошибка загрузки статистики:', error);
+    }
 }
 
 // ========================================
 // АНИМЕ ЦИТАТА
 // ========================================
-function loadAnimeQuote() {
-    const quotes = AppState.data.quotes;
-    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
-    
-    const quoteElement = document.getElementById('animeQuote');
-    if (quoteElement && randomQuote) {
-        quoteElement.innerHTML = `
-            <p>"${randomQuote.quote}"</p>
-            <cite>- ${randomQuote.character}, ${randomQuote.anime}</cite>
-        `;
+async function loadAnimeQuote() {
+    try {
+        const quote = await fetchAPI('/quotes');
+        
+        const quoteElement = document.getElementById('animeQuote');
+        if (quoteElement) {
+            quoteElement.innerHTML = `
+                <p>"${quote.text}"</p>
+                <cite>- ${quote.author}</cite>
+            `;
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки цитаты:', error);
     }
 }
 
@@ -747,6 +808,12 @@ function formatDate(dateString) {
 function getCurrentDateTime() {
     const now = new Date();
     return now.toISOString().replace('T', ' ').substring(0, 16);
+}
+
+// Утилита для показа ошибок
+function showError(message) {
+    alert(message);
+    console.error(message);
 }
 
 // Закрытие модальных окон по клику вне контента
