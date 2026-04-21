@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AnimeForum - Аниме форум для фанатов</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎌</text></svg>">
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container header-content">
+            <div class="logo">
+                <a href="#" data-page="home">
+                    <i class="fas fa-torii-gate"></i>
+                    <span>AnimeForum</span>
+                </a>
+            </div>
+            
+            <nav class="main-nav">
+                <ul>
+                    <li><a href="#" data-page="home"><i class="fas fa-home"></i> Главная</a></li>
+                    <li><a href="#" data-page="profile"><i class="fas fa-user"></i> Профиль</a></li>
+                    <li><a href="#"><i class="fas fa-users"></i> Сообщество</a></li>
+                </ul>
+            </nav>
+            
+            <div class="header-actions">
+                <div class="search-box">
+                    <input type="text" id="searchInput" placeholder="Поиск по форуму...">
+                    <button id="searchBtn"><i class="fas fa-search"></i></button>
+                </div>
+                
+                <button class="theme-toggle" id="themeToggle">
+                    <i class="fas fa-moon"></i>
+                </button>
+                
+                <div class="auth-buttons">
+                    <button class="btn btn-outline" id="loginBtn">Вход</button>
+                    <button class="btn btn-primary" id="registerBtn">Регистрация</button>
+                </div>
+                
+                <button class="mobile-menu-btn" id="mobileMenuBtn">
+                    <i class="fas fa-bars"></i>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Основной контент -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Хлебные крошки -->
+            <nav class="breadcrumbs" id="breadcrumbs">
+                <a href="#" data-page="home">Главная</a>
+                <span class="separator">/</span>
+                <span class="current">Форум</span>
+            </nav>
+
+            <!-- Страница: Главная (список категорий) -->
+            <section id="homePage" class="page active">
+                <!-- Статистика форума -->
+                <div class="forum-stats">
+                    <div class="stat-card">
+                        <i class="fas fa-users"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="onlineUsers">0</span>
+                            <span class="stat-label">Пользователей онлайн</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-comments"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalTopics">0</span>
+                            <span class="stat-label">Тем всего</span>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-envelope"></i>
+                        <div class="stat-info">
+                            <span class="stat-value" id="totalPosts">0</span>
+                            <span class="stat-label">Сообщений всего</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Фильтры и сортировка -->
+                <div class="filters-bar">
+                    <div class="filter-group">
+                        <label for="categoryFilter">Категория:</label>
+                        <select id="categoryFilter">
+                            <option value="all">Все категории</option>
+                        </select>
+                    </div>
+                    <div class="filter-group">
+                        <label for="sortOptions">Сортировка:</label>
+                        <select id="sortOptions">
+                            <option value="date">По дате</option>
+                            <option value="popular">По популярности</option>
+                            <option value="replies">По ответам</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-primary" id="newTopicBtn">
+                        <i class="fas fa-plus"></i> Новая тема
+                    </button>
+                </div>
+
+                <!-- Список категорий -->
+                <div class="categories-list" id="categoriesList">
+                    <!-- Категории будут загружены через JS -->
+                </div>
+
+                <!-- Последние активные темы -->
+                <div class="recent-topics">
+                    <h2><i class="fas fa-fire"></i> Последние активные темы</h2>
+                    <div class="topics-grid" id="recentTopicsList">
+                        <!-- Темы будут загружены через JS -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Страница: Тема с постами -->
+            <section id="topicPage" class="page">
+                <div class="topic-header">
+                    <button class="btn btn-outline back-btn" id="backToCategories">
+                        <i class="fas fa-arrow-left"></i> Назад
+                    </button>
+                    <div class="topic-title-section">
+                        <h1 id="topicTitle">Название темы</h1>
+                        <div class="topic-tags" id="topicTags">
+                            <!-- Теги будут добавлены через JS -->
+                        </div>
+                    </div>
+                    <div class="topic-actions">
+                        <button class="btn btn-primary" id="replyBtn">
+                            <i class="fas fa-reply"></i> Ответить
+                        </button>
+                    </div>
+                </div>
+
+                <div class="posts-container" id="postsContainer">
+                    <!-- Посты будут загружены через JS -->
+                </div>
+
+                <!-- Пагинация -->
+                <div class="pagination" id="topicPagination">
+                    <!-- Пагинация будет добавлена через JS -->
+                </div>
+
+                <!-- Форма быстрого ответа -->
+                <div class="quick-reply">
+                    <h3><i class="fas fa-pencil-alt"></i> Быстрый ответ</h3>
+                    <form id="quickReplyForm">
+                        <textarea id="quickReplyText" placeholder="Напишите ваш ответ..." rows="4"></textarea>
+                        <div class="form-actions">
+                            <button type="submit" class="btn btn-primary">Отправить</button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Страница: Профиль пользователя -->
+            <section id="profilePage" class="page">
+                <div class="profile-container">
+                    <div class="profile-header-card">
+                        <div class="profile-avatar">
+                            <img id="profileAvatar" src="" alt="Аватар">
+                            <span class="status-indicator online"></span>
+                        </div>
+                        <div class="profile-info">
+                            <h2 id="profileUsername">Имя пользователя</h2>
+                            <p class="profile-signature" id="profileSignature">Подпись пользователя</p>
+                            <div class="profile-badges" id="profileBadges">
+                                <!-- Бейджи будут добавлены через JS -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-content">
+                        <div class="profile-stats-card">
+                            <h3><i class="fas fa-chart-bar"></i> Статистика</h3>
+                            <div class="stats-grid">
+                                <div class="stat-item">
+                                    <i class="fas fa-comment"></i>
+                                    <span id="profileMessages">0</span>
+                                    <span>Сообщения</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-star"></i>
+                                    <span id="profileReputation">0</span>
+                                    <span>Репутация</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-calendar"></i>
+                                    <span id="profileRegDate">-</span>
+                                    <span>Дата регистрации</span>
+                                </div>
+                                <div class="stat-item">
+                                    <i class="fas fa-clock"></i>
+                                    <span id="profileLastVisit">-</span>
+                                    <span>Последний визит</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="profile-favorites-card">
+                            <h3><i class="fas fa-heart"></i> Любимые аниме</h3>
+                            <div class="favorites-list" id="profileFavorites">
+                                <!-- Любимые аниме будут добавлены через JS -->
+                            </div>
+                        </div>
+
+                        <div class="profile-recent-activity">
+                            <h3><i class="fas fa-history"></i> Недавняя активность</h3>
+                            <div class="activity-list" id="profileActivity">
+                                <!-- Активность будет добавлена через JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Модальное окно: Создание темы -->
+    <div class="modal" id="newTopicModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2><i class="fas fa-plus-circle"></i> Создать новую тему</h2>
+                <button class="close-modal" id="closeNewTopicModal">&times;</button>
+            </div>
+            <form id="newTopicForm">
+                <div class="form-group">
+                    <label for="topicCategory">Категория</label>
+                    <select id="topicCategory" required>
+                        <!-- Категории будут добавлены через JS -->
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="topicTitleInput">Заголовок</label>
+                    <input type="text" id="topicTitleInput" placeholder="Введите заголовок темы" required>
+                </div>
+                <div class="form-group">
+                    <label for="topicContent">Содержание</label>
+                    <textarea id="topicContent" placeholder="Напишите содержание темы..." rows="6" required></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="topicTagsInput">Теги (через запятую)</label>
+                    <input type="text" id="topicTagsInput" placeholder="романтика, экшен, комедия">
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancelNewTopic">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Создать тему</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно: Вход -->
+    <div class="modal" id="loginModal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h2><i class="fas fa-sign-in-alt"></i> Вход</h2>
+                <button class="close-modal" id="closeLoginModal">&times;</button>
+            </div>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="loginUsername">Имя пользователя</label>
+                    <input type="text" id="loginUsername" required>
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Пароль</label>
+                    <input type="password" id="loginPassword" required>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-outline" id="cancelLogin">Отмена</button>
+                    <button type="submit" class="btn btn-primary">Войти</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3><i class="fas fa-torii-gate"></i> AnimeForum</h3>
+                    <p>Лучшее место для обсуждения аниме, манги и косплея!</p>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Быстрые ссылки</h4>
+                    <ul>
+                        <li><a href="#" data-page="home">Главная</a></li>
+                        <li><a href="#">Правила</a></li>
+                        <li><a href="#">Команда</a></li>
+                        <li><a href="#">Контакты</a></li>
+                    </ul>
+                </div>
+                
+                <div class="footer-section">
+                    <h4>Статистика</h4>
+                    <p>Пользователей: <span id="footerTotalUsers">0</span></p>
+                    <p>Тем: <span id="footerTotalTopics">0</span></p>
+                    <p>Сообщений: <span id="footerTotalPosts">0</span></p>
+                </div>
+                
+                <div class="footer-section quote-section">
+                    <h4>Аниме цитата дня</h4>
+                    <blockquote id="animeQuote">
+                        <p>Загрузка цитаты...</p>
+                        <cite>- Неизвестно</cite>
+                    </blockquote>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p>&copy; 2024 AnimeForum. Все права защищены. Сделано с <i class="fas fa-heart"></i> для фанатов аниме.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/mock-data.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>
